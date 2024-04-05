@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:vfsclient/src/logger.dart';
 
 import 'package:vfsclient/src/utils.dart';
 import 'package:vfsclient/vfsclient.dart';
@@ -86,6 +87,7 @@ class UploadResponse {
   String? url;
   String? key;
   String? filePath;
+  String? cacheDir;
 
   UploadResponse({
     this.id,
@@ -101,15 +103,26 @@ class UploadResponse {
     this.url,
     this.key,
     this.filePath,
+    this.cacheDir,
   });
 
   @override
   String toString() {
-    return 'UploadResponse{id: $id, bucketId: $bucketId, fileId: $fileId, extension: $extension, name: $name, size: $size, path: $path, type: $type, metadata: $metadata, createdAt: $createdAt, url: $url, key: $key, filePath: $filePath}';
+    return 'UploadResponse{id: $id, bucketId: $bucketId, fileId: $fileId, extension: $extension, name: $name, size: $size, path: $path, type: $type, metadata: $metadata, createdAt: $createdAt, url: $url, key: $key, filePath: $filePath, cacheDir: $cacheDir}';
   }
 
   UploadResponse cache() {
-    final cacheDir = Utils.getDefaultCacheDir();
+    var cacheDir = this.cacheDir ?? Utils.getDefaultCacheDir();
+    if (cacheDir.endsWith('/')) {
+      cacheDir = cacheDir.substring(0, cacheDir.length - 1);
+    }
+
+    // create cache dir if not exists
+    final cacheDirFile = Directory('$cacheDir/$bucketId');
+    if (!cacheDirFile.existsSync()) {
+      cacheDirFile.createSync(recursive: true);
+    }
+
     final cacheFilePath = '$cacheDir/$bucketId/$fileId';
     final cacheManifestExt = VFSClient.cacheExtension;
 
@@ -120,6 +133,8 @@ class UploadResponse {
         cacheFile.statSync().type == FileSystemEntityType.file &&
         cacheManifestFile.existsSync() &&
         cacheManifestFile.statSync().type == FileSystemEntityType.file) {
+      // Load cache path to filePath with absolute path
+      filePath = cacheFile.absolute.path;
       return this;
     }
 
@@ -146,6 +161,23 @@ class UploadResponse {
     return this;
   }
 
+  File? get file {
+    if (filePath == null || filePath!.isEmpty) {
+      filePath = cache().filePath;
+      if (filePath == null || filePath!.isEmpty) {
+        return null;
+      }
+    }
+
+    final file = File(filePath!);
+    if (!file.existsSync() ||
+        file.statSync().type != FileSystemEntityType.file) {
+      return null;
+    }
+
+    return file;
+  }
+
   String fileKey() {
     return '$bucketId:$fileId';
   }
@@ -154,7 +186,26 @@ class UploadResponse {
     return Utils.isImage(type);
   }
 
-  static UploadResponse? fromJson(String? jsonString, {String? filePath}) {
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'bucket_id': bucketId,
+      'file_id': fileId,
+      'extension': extension,
+      'name': name,
+      'size': size,
+      'path': path,
+      'type': type,
+      'metadata': metadata,
+      'created_at': createdAt?.toIso8601String(),
+      'url': url,
+      'key': key,
+      'file_path': filePath,
+    };
+  }
+
+  static UploadResponse? fromJson(String? jsonString,
+      {String? filePath, String? cacheDir}) {
     if (jsonString == null || jsonString.isEmpty) {
       return null;
     }
@@ -163,7 +214,7 @@ class UploadResponse {
     return UploadResponse(
       id: json['id'],
       bucketId: json['bucket_id'],
-      fileId: json['fileId'],
+      fileId: json['file_id'],
       extension: json['extension'],
       name: json['name'],
       size: json['size'],
@@ -174,6 +225,7 @@ class UploadResponse {
       url: json['url'],
       key: json['key'],
       filePath: filePath,
+      cacheDir: cacheDir,
     );
   }
 }

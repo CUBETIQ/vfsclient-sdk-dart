@@ -2,15 +2,16 @@ import 'package:vfsclient/vfsclient.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('A group of tests', () {
-    final awesome = Awesome();
+  group('Upload Tests', () {
+    final sdk = VFSClient.withOptions(url: "http://localhost:5001");
 
     setUp(() {
-      // Additional setup goes here.
+      print("Setting up: ${sdk.getVersionInfo()}");
+
     });
 
-    test('First Test', () {
-      expect(awesome.isAwesome, isTrue);
+    test('VFSClient should have options', () {
+      expect(sdk.options, isNotNull);
     });
   });
 }

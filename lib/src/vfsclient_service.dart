@@ -64,12 +64,14 @@ class VFSClientService {
   }
 
   static Future<http.Response> get(
-      String url, String apiKey, String bucketId, String fileId) async {
+      String url, String apiKey, String bucketId, String fileId,
+      {String? contentType}) async {
     var response = await http.get(
       Uri.parse('$url/v/$bucketId/$fileId'),
       headers: <String, String>{
         'User-Agent': VFSClient.userAgent,
         'x-api-key': apiKey,
+        'Content-Type': contentType ?? '',
       },
     );
     return response;
