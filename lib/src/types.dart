@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:vfsclient/src/logger.dart';
 
 import 'package:vfsclient/src/utils.dart';
 import 'package:vfsclient/vfsclient.dart';
@@ -227,6 +226,59 @@ class UploadResponse {
       filePath: filePath,
       cacheDir: cacheDir,
     );
+  }
+
+  static UploadResponse? loadFromCache(String fileId, {String? cacheDir}) {
+    var cacheDirPath = cacheDir ?? Utils.getDefaultCacheDir();
+    if (cacheDirPath.endsWith('/')) {
+      cacheDirPath = cacheDirPath.substring(0, cacheDirPath.length - 1);
+    }
+
+    final cacheFilePath = '$cacheDirPath/$fileId';
+    final cacheManifestExt = VFSClient.cacheExtension;
+
+    final cacheFile = File(cacheFilePath);
+    final cacheManifestFile = File('$cacheFilePath$cacheManifestExt');
+
+    if (!cacheFile.existsSync() ||
+        cacheFile.statSync().type != FileSystemEntityType.file ||
+        !cacheManifestFile.existsSync() ||
+        cacheManifestFile.statSync().type != FileSystemEntityType.file) {
+      return null;
+    }
+
+    final manifest = jsonDecode(cacheManifestFile.readAsStringSync());
+    return UploadResponse.fromJson(jsonEncode(manifest), cacheDir: cacheDir);
+  }
+
+  void deleteCache() {
+    if (filePath != null && filePath!.isNotEmpty) {
+      final file = File(filePath!);
+      if (file.existsSync() && file.statSync().type == FileSystemEntityType.file) {
+        file.deleteSync();
+      }
+    }
+
+    final cacheDir = Utils.getDefaultCacheDir();
+    if (cacheDir.endsWith('/')) {
+      cacheDir.substring(0, cacheDir.length - 1);
+    }
+
+    final cacheFilePath = '$cacheDir/$bucketId/$fileId';
+    final cacheManifestExt = VFSClient.cacheExtension;
+
+    final cacheFile = File(cacheFilePath);
+    final cacheManifestFile = File('$cacheFilePath$cacheManifestExt');
+
+    if (cacheFile.existsSync() &&
+        cacheFile.statSync().type == FileSystemEntityType.file) {
+      cacheFile.deleteSync();
+    }
+
+    if (cacheManifestFile.existsSync() &&
+        cacheManifestFile.statSync().type == FileSystemEntityType.file) {
+      cacheManifestFile.deleteSync();
+    }
   }
 }
 

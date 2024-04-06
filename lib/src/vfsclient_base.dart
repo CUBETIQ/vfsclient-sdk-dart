@@ -67,9 +67,19 @@ class VFSClient {
       throw Exception('bucketId is required');
     }
 
-    // TODO: check cache first
+    // Retrieve file info from cache, if exists
+    final cachedFile = UploadResponse.loadFromCache(
+      "$bId/$fileId",
+      cacheDir: options.cacheDir,
+    );
+
+    if (cachedFile != null) {
+      Logs.d('get from cache: $cachedFile');
+      return cachedFile;
+    }
 
     // Retrieve file info from server
+    Logs.d('get from server: $bId:$fileId');
     final response = await VFSClientService.get(
         options.url, options.apiKey, bId, fileId,
         contentType: 'application/json');
@@ -106,11 +116,21 @@ class VFSClient {
       fileId,
     );
 
-    if (response.statusCode != 200) {
+    // Check if delete failed, and the status must be no content
+    if (response.statusCode != 204) {
       throw Exception('Delete failed: ${response.body}');
     }
 
-    // TODO: clear cache
+    // Clear cache for the file, if exists
+    final cachedFile = UploadResponse.loadFromCache(
+      "$bId/$fileId",
+      cacheDir: options.cacheDir,
+    );
+
+    if (cachedFile != null) {
+      Logs.d('delete cache: $cachedFile');
+      cachedFile.deleteCache();
+    }
   }
 
   String getVersionInfo() {

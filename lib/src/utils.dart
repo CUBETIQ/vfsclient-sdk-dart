@@ -5,7 +5,7 @@ import 'package:vfsclient/src/logger.dart';
 class Utils {
   static String getDefaultCacheDir() {
     // get default platform cache dir
-    return '';
+    return '.';
   }
 
   static void download(String url, File file) {
