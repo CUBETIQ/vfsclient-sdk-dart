@@ -5,15 +5,14 @@ import 'package:vfsclient/src/logger.dart';
 class Utils {
   static String getDefaultCacheDir() {
     // get default platform cache dir
-    return '.';
+    return '.cache';
   }
 
-  static void download(String url, File file) {
+  static Future<void> download(String url, File file) async {
     // Download file from url to file with http
     Logs.d('Downloading file from $url to ${file.path}');
-    http.get(Uri.parse(url)).then((response) {
-      file.writeAsBytesSync(response.bodyBytes);
-    });
+    final response = await http.get(Uri.parse(url));
+    await file.writeAsBytes(response.bodyBytes);
   }
 
   static void writeContent(String content, File file) {
@@ -25,7 +24,7 @@ class Utils {
   static void copyFile(File source, File target) {
     // Copy file from source to target
     Logs.d('Copying file from ${source.path} to ${target.path}');
-    source.copySync(target.path);
+    source.copySync(target.absolute.path);
   }
 
   static bool isImage(String? type) {

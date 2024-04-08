@@ -1,3 +1,8 @@
 ## 1.0.0
 
-- Initial version.
+**Main Features**
+
+-   Upload any file.
+-   Cache file.
+-   Get/Download file.
+-   Delete file.

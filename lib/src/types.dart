@@ -110,7 +110,7 @@ class UploadResponse {
     return 'UploadResponse{id: $id, bucketId: $bucketId, fileId: $fileId, extension: $extension, name: $name, size: $size, path: $path, type: $type, metadata: $metadata, createdAt: $createdAt, url: $url, key: $key, filePath: $filePath, cacheDir: $cacheDir}';
   }
 
-  UploadResponse cache() {
+  Future<UploadResponse> cache() async {
     var cacheDir = this.cacheDir ?? Utils.getDefaultCacheDir();
     if (cacheDir.endsWith('/')) {
       cacheDir = cacheDir.substring(0, cacheDir.length - 1);
@@ -140,7 +140,7 @@ class UploadResponse {
     if (filePath == null || filePath!.isEmpty) {
       filePath = cacheFilePath;
       final manifest = jsonEncode(this);
-      Utils.download(url!, cacheFile);
+      await Utils.download(url!, cacheFile);
       Utils.writeContent(manifest, cacheManifestFile);
     } else {
       final existedFile = File(filePath!);
@@ -148,7 +148,7 @@ class UploadResponse {
           existedFile.statSync().type != FileSystemEntityType.file) {
         filePath = cacheFilePath;
         final manifest = jsonEncode(this);
-        Utils.download(url!, cacheFile);
+        await Utils.download(url!, cacheFile);
         Utils.writeContent(manifest, cacheManifestFile);
       } else {
         final manifest = jsonEncode(this);
@@ -160,9 +160,9 @@ class UploadResponse {
     return this;
   }
 
-  File? get file {
+  Future<File?> get file async {
     if (filePath == null || filePath!.isEmpty) {
-      filePath = cache().filePath;
+      filePath = (await cache()).filePath;
       if (filePath == null || filePath!.isEmpty) {
         return null;
       }
@@ -248,18 +248,26 @@ class UploadResponse {
     }
 
     final manifest = jsonDecode(cacheManifestFile.readAsStringSync());
-    return UploadResponse.fromJson(jsonEncode(manifest), cacheDir: cacheDir);
+    final response =
+        UploadResponse.fromJson(jsonEncode(manifest), cacheDir: cacheDir);
+    if (response == null) {
+      return null;
+    }
+
+    response.filePath = cacheFile.absolute.path;
+    return response;
   }
 
   void deleteCache() {
     if (filePath != null && filePath!.isNotEmpty) {
       final file = File(filePath!);
-      if (file.existsSync() && file.statSync().type == FileSystemEntityType.file) {
+      if (file.existsSync() &&
+          file.statSync().type == FileSystemEntityType.file) {
         file.deleteSync();
       }
     }
 
-    final cacheDir = Utils.getDefaultCacheDir();
+    final cacheDir = this.cacheDir ?? Utils.getDefaultCacheDir();
     if (cacheDir.endsWith('/')) {
       cacheDir.substring(0, cacheDir.length - 1);
     }

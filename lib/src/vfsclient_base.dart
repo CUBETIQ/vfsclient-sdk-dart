@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:vfsclient/src/exceptions.dart';
 import 'package:vfsclient/src/logger.dart';
 import 'package:vfsclient/src/types.dart';
 import 'package:vfsclient/src/vfsclient_service.dart';
@@ -18,8 +19,9 @@ class VFSClient {
     required String url,
     String? apiKey,
     String? bucketId,
+    String? cacheDir,
   }) : options = VFSClientOptions(
-            url: url, apiKey: apiKey ?? "", bucketId: bucketId);
+            url: url, apiKey: apiKey ?? "", bucketId: bucketId, cacheDir: cacheDir);
 
   Future<UploadResponse?> upload(UploadRequest request) async {
     Logs.d('upload request: $request');
@@ -30,7 +32,7 @@ class VFSClient {
 
     final bucketId = request.bucketId ?? options.bucketId;
     if (bucketId == null) {
-      throw Exception('bucketId is required');
+      throw BucketIDRequiredException('bucketId is required');
     }
 
     final response = await VFSClientService.upload(
@@ -64,7 +66,7 @@ class VFSClient {
 
     final bId = bucketId ?? options.bucketId;
     if (bId == null) {
-      throw Exception('bucketId is required');
+      throw BucketIDRequiredException('bucketId is required');
     }
 
     // Retrieve file info from cache, if exists
@@ -84,8 +86,10 @@ class VFSClient {
         options.url, options.apiKey, bId, fileId,
         contentType: 'application/json');
 
-    if (response.statusCode != 200) {
-      throw Exception('Get failed: ${response.body}');
+    if (response.statusCode == 404) {
+      throw FileNotFoundException('File not found: $fileId');
+    } else if (response.statusCode != 200) {
+      throw UnkownException('Get failed: ${response.body}');
     }
 
     return UploadResponse.fromJson(
@@ -106,7 +110,7 @@ class VFSClient {
 
     final bId = bucketId ?? options.bucketId;
     if (bId == null) {
-      throw Exception('bucketId is required');
+      throw BucketIDRequiredException('bucketId is required');
     }
 
     final response = await VFSClientService.delete(
@@ -131,6 +135,11 @@ class VFSClient {
       Logs.d('delete cache: $cachedFile');
       cachedFile.deleteCache();
     }
+  }
+
+  Future<bool> check() async {
+    final response = await VFSClientService.check(options.url, options.apiKey);
+    return response.statusCode == 200;
   }
 
   String getVersionInfo() {
