@@ -21,7 +21,10 @@ class VFSClient {
     String? bucketId,
     String? cacheDir,
   }) : options = VFSClientOptions(
-            url: url, apiKey: apiKey ?? "", bucketId: bucketId, cacheDir: cacheDir);
+            url: url,
+            apiKey: apiKey ?? "",
+            bucketId: bucketId,
+            cacheDir: cacheDir);
 
   Future<UploadResponse?> upload(UploadRequest request) async {
     Logs.d('upload request: $request');
@@ -55,6 +58,18 @@ class VFSClient {
   }
 
   Future<UploadResponse?> get(String fileId, {String? bucketId}) async {
+    // check if fileId is an url like this format: http://localhost:5001/v/{bucketId}/{fileId}
+    if (fileId.startsWith('http') && fileId.contains('/v/')) {
+      final parts = fileId.split('/v/');
+      if (parts.length == 2) {
+        final subParts = parts[1].split('/');
+        if (subParts.length == 2) {
+          bucketId = subParts[0];
+          fileId = subParts[1];
+        }
+      }
+    }
+
     // check if fileId contains ':' then split it [bucketId:fileId]
     if (fileId.contains(':')) {
       final parts = fileId.split(':');

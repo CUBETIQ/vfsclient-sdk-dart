@@ -6,3 +6,4 @@
 -   Cache file.
 -   Get/Download file.
 -   Delete file.
+-   Support for Get file by File ID, File Key (`{bucket_id}:{file_id}`) and File URL (`/v`).

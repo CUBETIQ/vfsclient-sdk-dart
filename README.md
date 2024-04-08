@@ -6,6 +6,12 @@
 -   [x] Download
 -   [x] Delete
 -   [x] Cache
+-   [x] Support for Get file by File ID, File Key (`{bucket_id}:{file_id}`) and File URL (`/v`).
+
+### ToDo
+
+-   [ ] Enhance the Get file and cache it by file URL. (For now, it's only work for URL with `/v` prefix)
+-   [ ] Cache improvement.
 
 ### Basic Usage
 

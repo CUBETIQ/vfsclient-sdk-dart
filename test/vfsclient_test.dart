@@ -50,6 +50,26 @@ void main() {
 
       // Is file exists
       expect(getResult?.file, isNotNull);
+
+      // Get file by url
+      final getResultByUrl = (await sdk.get(getResult?.url ?? ""));
+      expect(getResultByUrl, isNotNull);
+
+      // Check file by url
+      expect(getResultByUrl?.fileId, equals(fileId));
+
+      // Is file exists by url
+      expect(getResultByUrl?.file, isNotNull);
+
+      // Get file by key format: {bucketId}:{fileId}
+      final getResultByKey = (await sdk.get("$bucketId:$fileId"));
+      expect(getResultByKey, isNotNull);
+
+      // Check file by key
+      expect(getResultByKey?.fileId, equals(fileId));
+
+      // Is file exists by key
+      expect(getResultByKey?.file, isNotNull);
     });
 
     test('VFSClient should delete', () async {
